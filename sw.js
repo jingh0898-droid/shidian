@@ -1,5 +1,5 @@
 /* 拾店 service worker —— 壳离线可用，数据在 IndexedDB 里，不缓存 /api */
-const VER = 'shidian-static-v1';
+const VER = 'shidian-static-v3';
 const SHELL = [
   './',
   './index.html',

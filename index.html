@@ -288,7 +288,22 @@ img{display:block;max-width:100%}
 .viewer .flash.on{animation:flash .42s ease-out}
 @keyframes flash{0%{opacity:.92}100%{opacity:0}}
 .thumbs{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto}
-.thumbs img{width:56px;height:56px;object-fit:cover;border-radius:5px;border:1px solid var(--line)}
+.thumbs .tw{position:relative;flex:0 0 auto}
+.thumbs img{width:56px;height:56px;object-fit:cover;border-radius:5px;border:1px solid var(--line);display:block}
+.thumbs .tw i{position:absolute;top:-5px;right:-5px;width:18px;height:18px;border-radius:50%;
+  background:var(--ink);color:#F5EBDA;font-style:normal;font-size:12px;line-height:18px;
+  text-align:center;box-shadow:0 0 0 2px var(--surface)}
+.photo-acts{display:flex;gap:8px;margin:-6px 0 14px}
+.photo-acts button{flex:1;height:34px;border-radius:var(--r-ctl);border:1px dashed var(--line);
+  color:var(--dim);font-size:12px;background:transparent;padding:0 10px;white-space:nowrap}
+.photo-acts button:active{background:var(--canvas)}
+.loc-manual{background:var(--canvas);border:1px dashed var(--line);border-radius:var(--r-card);
+  padding:12px 12px 2px;margin:-4px 0 14px}
+.loc-manual .tip{font-size:11px;color:var(--dim);line-height:1.6;margin-bottom:10px}
+.loc-manual .row2{display:flex;gap:8px;margin-bottom:10px}
+.loc-manual input{background:var(--surface);border:1px solid var(--line-2);border-radius:var(--r-ctl);
+  padding:11px 13px;font-size:13px;width:100%;margin-bottom:10px}
+.loc-manual .row2 input{margin-bottom:0}
 
 .field{margin-bottom:12px}
 .field label{display:block;font-size:11.5px;letter-spacing:.08em;color:var(--dim);margin-bottom:6px}
@@ -629,10 +644,26 @@ img{display:block;max-width:100%}
       <button class="shutter" id="shutter" aria-label="拍照"><i></i></button>
       <div class="hint" id="shoot-hint">按一下拍门脸，进门后再补一张吃的。<br>照片都会进这次打卡的卡片。</div>
     </div>
+    <div class="photo-acts">
+      <button type="button" id="photo-gallery">从相册选</button>
+      <button type="button" id="photo-clear">清空重来</button>
+    </div>
     <div class="loc-strip" id="ck-loc">
       <svg viewBox="0 0 256 256" fill="currentColor"><path d="M237.33,106.21,61.41,41l-.16-.05A16,16,0,0,0,40.9,61.25a1,1,0,0,0,.05.16l65.26,175.92A15.77,15.77,0,0,0,121.28,248h.3a15.77,15.77,0,0,0,15-11.29l.06-.2,21.84-78,78-21.84.2-.06a16,16,0,0,0,.62-30.38ZM149.84,144.3a8,8,0,0,0-5.54,5.54L121.3,232l-.06-.17L56,56l175.82,65.22.16.06Z"/></svg>
       <div class="t"><b id="ck-place">位置未记录</b><span id="ck-coord">允许定位后自动写入</span></div>
-      <span class="ok" id="ck-ok" hidden>已锁定</span>
+      <button class="ok" id="ck-loc-edit" type="button">改</button>
+    </div>
+    <div class="loc-manual" id="ck-manual" hidden>
+      <div class="tip">不想开定位？自己填一个点就行。<br>纬度在前、经度在后；从地图 App 复制的链接也能直接粘。</div>
+      <div class="row2">
+        <input id="ck-lat" placeholder="纬度 30.65432" inputmode="decimal">
+        <input id="ck-lng" placeholder="经度 104.06543" inputmode="decimal">
+      </div>
+      <input id="ck-map-link" placeholder="粘贴地图分享链接（可选）">
+      <div class="row2">
+        <button class="btn-main ghost" id="ck-loc-gps" type="button" style="margin-top:0;height:42px;font-size:13px">用当前定位</button>
+        <button class="btn-main" id="ck-loc-apply" type="button" style="margin-top:0;height:42px;font-size:13px">记下这个点</button>
+      </div>
     </div>
     <div class="field"><label>店名</label><input id="ck-name" placeholder="比如 张记手工面" maxlength="24"></div>
     <div class="field"><label>一句话</label><textarea id="ck-say" placeholder="汤头熬了六个钟头，端上来还在冒泡。" maxlength="80"></textarea></div>
@@ -843,7 +874,8 @@ function renderMe(){
     `<div class="row" id="row-me">${u?`<span class="mono">${esc((u.nick||'拾').slice(0,1))}</span>`:IC.who}<span class="k">${u?esc(u.nick):'还没有登进来'}</span><span class="end">${u?`<em>${CHAN[u.channel]||'本机'}</em><b id="me-out">退出</b>`:'<b>去登录</b>'}</span></div>`,
     ...top.map(([c,n])=>`<div class="row">${IC.pin}<span class="k">${esc(c)}</span><span class="end"><b>${n}</b> 枚</span></div>`),
     `<div class="row">${IC.book}<span class="k">还贴在想去那一页</span><span class="end"><b>${shopsWish().length}</b> 家</span></div>`,
-    `<div class="row">${IC.star}<span class="k">收过的赞</span><span class="end"><b>${done.reduce((n,s)=>n+(s.likes||0),0)}</b> 个</span></div>`
+    `<div class="row">${IC.star}<span class="k">收过的赞</span><span class="end"><b>${done.reduce((n,s)=>n+(s.likes||0),0)}</b> 个</span></div>`,
+    `<div class="row" id="row-api">${IC.chat}<span class="k">广场</span><span class="end">${state.solo?`<em>未连接</em>`:'<b>已连接</b>'}</span></div>`
   ].join('');
   const total=Math.max(20, Math.ceil(done.length/20)*20);
   $('#wallcount').textContent=`${done.length} / ${total} 格`;
@@ -854,6 +886,18 @@ function renderMe(){
   $('#row-me').onclick=()=>{
     if(!state.user){ openGate('welcome'); return; }
     if(confirm(`退出「${state.user.nick}」？章和照片都还在本机，这本手账不会丢。`)) logout();
+  };
+  // 广场地址：纯静态托管（GitHub Pages）时指向 Cloudflare Worker
+  $('#row-api').onclick=()=>{
+    const now=(localStorage.getItem('sd_api')||'').trim();
+    const v=prompt('广场服务地址：\n填 Cloudflare Worker 的 https 地址（如 https://shidian.xxx.workers.dev）\n留空 = 跟页面同域（本机 node 服务）',
+                   now);
+    if(v===null) return;
+    const t=v.trim().replace(/\/+$/,'');
+    if(!t){ localStorage.removeItem('sd_api'); toast('改回同域了，重开生效'); }
+    else if(!/^https?:\/\//.test(t)){ toast('要 http(s):// 开头，再试一次'); return; }
+    else { localStorage.setItem('sd_api',t); toast('广场地址存好了，重开一下页面'); }
+    setTimeout(()=>location.reload(), 1200);
   };
 }
 
@@ -943,19 +987,71 @@ async function ensureGeo(){
   const g=await getPosition(); if(g) state.geo=g;
   return g;
 }
+/* 手动定位：不想开 GPS、或在室内定位飘得离谱时，自己填一个点。
+   两种输入都吃：① 手填纬度/经度；② 直接粘地图 App 分享出来的链接（里面带坐标）。 */
+let manualGeo=null;
+
+function parseCoordText(txt){
+  const s=String(txt||'');
+  // 高德/腾讯常见：...&location=104.06,30.65 或 !3d30.65!4d104.06
+  const m3=/\b3d(\d{1,3}\.\d{3,8})/.exec(s), m4=/\b4d(\d{1,3}\.\d{3,8})/.exec(s);
+  if(m3 && m4) return {lat:parseFloat(m3[1]), lng:parseFloat(m4[1])};
+  const nums=s.match(/(\d{1,3}\.\d{4,8})/g);
+  if(!nums || nums.length<2) return null;
+  const a=parseFloat(nums[0]), b=parseFloat(nums[1]);
+  // 中国范围内经度(73~136)一定大于纬度(3~54)，据此判断谁在前
+  if(Math.abs(a)>60 && Math.abs(b)<60) return {lat:b, lng:a};
+  return {lat:a, lng:b};
+}
+function validCoord(g){
+  return g && !Number.isNaN(g.lat) && !Number.isNaN(g.lng)
+    && Math.abs(g.lat)<=90 && Math.abs(g.lng)<=180;
+}
 function paintGeo(g){
-  const lock=$('#ck-lock'), place=$('#ck-place'), coord=$('#ck-coord'), ok=$('#ck-ok');
-  if(g){ lock.innerHTML=IC.pin+'定位已记下';
-    place.textContent='位置已记录';
-    coord.textContent=`${g.lat.toFixed(5)}°N, ${g.lng.toFixed(5)}°E · ±${Math.round(g.acc)} 米`;
-    ok.hidden=false;
+  const lock=$('#ck-lock'), place=$('#ck-place'), coord=$('#ck-coord'), edit=$('#ck-loc-edit');
+  if(g){ lock.innerHTML=IC.pin+(manualGeo?'手动定位':'定位已记下');
+    place.textContent=manualGeo? '手动填的位置' : '位置已记录';
+    coord.textContent=`${g.lat.toFixed(5)}°N, ${g.lng.toFixed(5)}°E`+(manualGeo? ' · 手动' : ` · ±${Math.round(g.acc)} 米`);
+    edit.textContent='已锁定';
   } else {
     lock.innerHTML=IC.pin+'没有定位';
     place.textContent='位置未记录';
-    coord.textContent='浏览器没给定位权限，可以手填地点名';
-    ok.hidden=true;
+    coord.textContent='浏览器没给权限，点「改」自己填一个点';
+    edit.textContent='改';
   }
 }
+function openManualLoc(){
+  const box=$('#ck-manual');
+  box.hidden=false;
+  const g=manualGeo||state.geo;
+  $('#ck-lat').value=g? g.lat.toFixed(5):'';
+  $('#ck-lng').value=g? g.lng.toFixed(5):'';
+  $('#ck-map-link').value='';
+}
+$('#ck-loc-edit').onclick=()=>{
+  const box=$('#ck-manual');
+  if(box.hidden) openManualLoc(); else box.hidden=true;
+};
+$('#ck-map-link').oninput=e=>{
+  const g=parseCoordText(e.target.value);
+  if(validCoord(g)){ $('#ck-lat').value=g.lat.toFixed(5); $('#ck-lng').value=g.lng.toFixed(5); }
+};
+$('#ck-loc-apply').onclick=()=>{
+  let g={lat:parseFloat($('#ck-lat').value), lng:parseFloat($('#ck-lng').value)};
+  if(!validCoord(g)) g=parseCoordText($('#ck-map-link').value);
+  if(!validCoord(g)){ toast('这个点看不懂，纬度像 30.654、经度像 104.065'); return; }
+  manualGeo={lat:g.lat, lng:g.lng, acc:0, manual:true};
+  $('#ck-manual').hidden=true;
+  paintGeo(manualGeo);
+  toast('这个点记下了，卡片上会标「手动」');
+};
+$('#ck-loc-gps').onclick=async()=>{
+  manualGeo=null; state.geo=null;
+  const g=await ensureGeo();
+  $('#ck-manual').hidden=true;
+  paintGeo(g);
+  toast(g? '定位回来了，用手机的点' : '还是没定位权限，手动填吧');
+};
 ensureGeo().then(g=>{
   paintGeo(g);
   const where=$('#where');
@@ -978,7 +1074,7 @@ async function startCam(){
       const lock=$('#ck-lock'); lock.style.display='flex';
     };
   }catch(err){
-    $('#ph-empty').innerHTML='这台设备暂时用不了相机<br>下面这颗按钮会打开相册/相机，照样能拍';
+    $('#ph-empty').innerHTML='这台设备暂时用不了相机<br>点下面「从相册选」，照片照样能进这张卡';
   }
 }
 function stopCam(){
@@ -997,24 +1093,32 @@ function grabFrame(){
   c.getContext('2d').drawImage(src,0,0,c.width,c.height);
   return c.toDataURL('image/jpeg',.82);
 }
+const MAX_PHOTOS=3;                   // 广场侧也是最多 3 张
+function addPhoto(data){
+  if(shotPhotos.length>=MAX_PHOTOS){ toast('最多 3 张，够看了'); return false; }
+  shotPhotos.push(data); paintThumbs(); return true;
+}
 $('#shutter').onclick=async()=>{
+  if(shotPhotos.length>=MAX_PHOTOS){ toast('最多 3 张，够看了'); return; }
   await startCam();
   const data=grabFrame();
-  if(!data){ pickFile(); return; }
+  if(!data){ pickFile(true); return; }
   const fl=$('#flash'); fl.classList.remove('on'); void fl.offsetWidth; fl.classList.add('on');
-  shotPhotos.push(data); paintThumbs();
-  toast('照片已存进这次打卡');
+  addPhoto(data); toast('照片已存进这次打卡');
 };
-function pickFile(){
+function pickFile(fromCam){
   const inp=document.createElement('input');
-  inp.type='file'; inp.accept='image/*'; inp.setAttribute('capture','environment');
+  inp.type='file'; inp.accept='image/*';
+  if(fromCam) inp.setAttribute('capture','environment');   // 相机坏了时的兜底：直接弹相机
   inp.onchange=async()=>{
     const f=inp.files&&inp.files[0]; if(!f) return;
     const data=await shrinkFile(f);
-    shotPhotos.push(data); paintThumbs(); toast('照片已存进这次打卡');
+    if(addPhoto(data)) toast('照片已存进这次打卡');
   };
   inp.click();
 }
+$('#photo-gallery').onclick=()=>pickFile(false);   // 不带 capture：从相册里挑以前的照片
+$('#photo-clear').onclick=()=>{ shotPhotos=[]; paintThumbs(); toast('清空了，重新来'); };
 function shrinkFile(file){
   return new Promise(res=>{
     const img=new Image(); const url=URL.createObjectURL(file);
@@ -1028,15 +1132,23 @@ function shrinkFile(file){
   });
 }
 function paintThumbs(){
-  $('#thumbs').innerHTML=shotPhotos.map(p=>`<img src="${p}" alt="">`).join('');
+  $('#thumbs').innerHTML=shotPhotos.map((p,i)=>
+    `<div class="tw"><img src="${p}" alt=""><i data-drop="${i}" title="删掉这张">×</i></div>`).join('');
   $('#shoot-hint').innerHTML = shotPhotos.length
-    ? `已拍 ${shotPhotos.length} 张。<br>再按一下可以补拍，照片都会进这张卡。`
-    : '按一下拍门脸，进门后再补一张吃的。<br>照片都会进这次打卡的卡片。';
+    ? `已经 ${shotPhotos.length} 张${shotPhotos.length>=MAX_PHOTOS?'（满了）':''}。<br>点缩略图右上角的 × 能删掉。`
+    : '按快门拍一张，或从下面的「从相册选」挑一张。<br>照片都会进这次打卡的卡片。';
 }
+$('#thumbs').onclick=e=>{
+  const i=e.target.dataset.drop;
+  if(i===undefined) return;
+  shotPhotos.splice(Number(i),1); paintThumbs();
+};
 
 /* ═════════════════════════ 盖章 ═════════════════════════ */
 async function openCheckin(pre={}){
-  shotPhotos=[]; paintThumbs(); $('#thumbs').innerHTML='';
+  shotPhotos=[]; paintThumbs();
+  manualGeo=null; $('#ck-manual').hidden=true;
+  $('#ck-lat').value=''; $('#ck-lng').value=''; $('#ck-map-link').value='';
   $('#ck-name').value=pre.name||''; $('#ck-say').value=''; $('#ck-place-name').value=pre.place||'';
   $$('#ck-kind button').forEach(x=>x.classList.toggle('on', x.dataset.k===(pre.kind||'eat')));
   openSheet('sh-checkin');
@@ -1050,17 +1162,17 @@ $$('#ck-kind button').forEach(b=>b.onclick=()=>{ $$('#ck-kind button').forEach(x
 $('#ck-save').onclick=async()=>{
   const name=$('#ck-name').value.trim();
   if(!name){ toast('先写个店名，不然章不知道盖在哪'); $('#ck-name').focus(); return; }
-  if(!shotPhotos.length){ toast('还没有照片，先按一下快门'); return; }
+  if(!shotPhotos.length){ toast('还没有照片，按快门拍一张，或点「从相册选」'); return; }
   const note=$('#ck-say').value.trim();
   const place=$('#ck-place-name').value.trim();
   const bad=guardText(name,note,place);
   if(bad){ toast(`「${bad}」这类内容发不了，换句话写`); return; }
   if(demoOn()) await clearDemo();      // 第一枚真章盖下去，示例整本让位
-  const g=await ensureGeo();
+  const g=manualGeo || await ensureGeo();
   const s={
     id:uid(), status:'done', name, kind:$('#ck-kind button.on').dataset.k,
-    note, place: place || (g? '附近':'未记地点'),
-    lat:g?g.lat:null, lng:g?g.lng:null, acc:g?g.acc:null,
+    note, place: place || (manualGeo? '手动填的点' : (g? '附近':'未记地点')),
+    lat:g?g.lat:null, lng:g?g.lng:null, acc:g?g.acc:null, manual:!!manualGeo,
     photos:shotPhotos.slice(), createdAt:Date.now(), updatedAt:Date.now(),
     no: shopsDone().length+1,
     author:meNick(), owner:meId(), likes:0, comments:[]
@@ -1072,6 +1184,10 @@ $('#ck-save').onclick=async()=>{
   const sent=await feedPost(s);
   if(FEED_ON && sent && sent.ok===false){
     toast(sent.reason||'没发到广场，先留在本机');
+    return;
+  }
+  if(sent && sent.photoState==='pending'){
+    toast('章盖好了。照片在等人工过审，过了才会出现在广场');
     return;
   }
   toast(`已盖章 · 第 ${String(s.no).padStart(3,'0')} 号，${s.place}`);
@@ -1110,7 +1226,7 @@ function openDetail(s){
   if(s.feat) body.push(`<div class="srcrow"><div class="top"><span class="site">特色</span></div><q>${esc(s.feat)}</q></div>`);
   if(s.note) body.push(`<div class="srcrow"><div class="top"><span class="site">那天</span><span class="who">${dstr(s.createdAt)} ${tstr(s.createdAt)}</span></div><q>${esc(s.note)}</q></div>`);
   if(s.srcText) body.push(`<div class="srcrow"><div class="top"><span class="site">${esc(s.site||'看到的地方')}</span></div><q>${esc(s.srcText)}</q></div>`);
-  if(s.place||s.lat) body.push(`<div class="srcrow"><div class="top"><span class="site">位置</span></div><q>${esc(s.place||'')}${s.lat?`<br><span style="font-family:var(--font-num);font-size:12px;color:var(--dim)">${s.lat.toFixed(5)}°N, ${s.lng.toFixed(5)}°E</span>`:''}</q></div>`);
+  if(s.place||s.lat) body.push(`<div class="srcrow"><div class="top"><span class="site">位置</span>${s.manual?'<span class="who">手动</span>':''}</div><q>${esc(s.place||'')}${s.lat?`<br><span style="font-family:var(--font-num);font-size:12px;color:var(--dim)">${s.lat.toFixed(5)}°N, ${s.lng.toFixed(5)}°E</span>`:''}</q></div>`);
   $('#d-body').innerHTML=body.join('');
 
   const q=encodeURIComponent(s.name);
@@ -1257,13 +1373,44 @@ function guardText(...ts){
   return null;
 }
 
+/* 广场服务地址：默认跟页面同一个域（本机 node 服务就是这样）。
+   放到 GitHub Pages 这类纯静态托管时，把 Cloudflare Worker 的地址填进「我的章 → 广场」那一行，
+   存在 localStorage 的 sd_api 里，不用重新发布页面就能切换。 */
+const apiBase=()=> (localStorage.getItem('sd_api')||'').trim().replace(/\/+$/,'') || location.origin;
+
+/* 一次 POST 到 /api，body 里带 op。
+   为什么两种形状都支持：Pages Functions 只有一个 /api 路由（同域、无跨域）；
+   本机 Node 服务还是 /api/feed、/api/post 这一套，探测到 404 就回退，两边都能用。 */
+/* 两种形状哪个能用只探一次，记在 apiShape 里，之后直接走对的那条。 */
+let apiShape=null;
+async function apiCall(op, payload){
+  const base=apiBase();
+  const getOnly=(op==='feed'||op==='health');
+  const legacy=async()=>fetch(base+'/api/'+op, getOnly
+    ? {cache:'no-store'}
+    : {method:'POST',headers:{'content-type':'application/json'},
+       body:JSON.stringify(payload||{}), cache:'no-store'});
+  try{
+    if(apiShape==='legacy') return await (await legacy()).json().catch(()=>null);
+    let r=await fetch(base+'/api',{method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({op, ...(payload||{})}), cache:'no-store'});
+    if(r.status===404 || r.status===405 || r.status===501){
+      apiShape='legacy';
+      r=await legacy();
+    } else if(r.ok || r.status<500){
+      apiShape='single';
+    }
+    if(!r.ok && r.status>=500) return null;
+    return await r.json().catch(()=>null);
+  }catch(e){ return null; }
+}
+
 async function feedLoad(){
   if(!FEED_ON) return;
   let data;
   try{
-    const r=await fetch(location.origin+'/api/feed',{cache:'no-store'});
-    if(!r.ok) return;
-    data=await r.json();
+    data=await apiCall('feed');
+    if(!data || !data.posts) return;
   }catch(e){ return; }
   const posts=(data.posts||[]).filter(p=>p&&p.id);
   if(!posts.length) return;
@@ -1282,37 +1429,21 @@ async function feedLoad(){
 }
 
 async function feedPost(s){
-  if(!FEED_ON) return {ok:true, local:true};
-  const body={post:{...s, photos:(s.photos||[]).slice(0,3), author:meNick(), owner:meId()}};
-  try{
-    const res=await fetch(location.origin+'/api/post',{method:'POST',
-      headers:{'content-type':'application/json'}, body:JSON.stringify(body)});
-    return await res.json();
-  }catch(e){ return {ok:false, reason:'没连上广场，这张先留在本机'}; }
+  if(!FEED_ON || state.solo) return {ok:true, local:true};   // 单机模式不弹"没连上广场"
+  const r=await apiCall('post', {post:{...s, photos:(s.photos||[]).slice(0,3), author:meNick(), owner:meId()}});
+  return r || {ok:false, reason:'没连上广场，这张先留在本机'};
 }
 async function feedComment(post,text){
-  try{
-    const res=await fetch(location.origin+'/api/comment',{method:'POST',
-      headers:{'content-type':'application/json'},
-      body:JSON.stringify({postId:post.id, text, author:meNick()})});
-    return await res.json();
-  }catch(e){ return {ok:false, reason:'没连上广场'}; }
+  const r=await apiCall('comment', {postId:post.id, text, author:meNick()});
+  return r || {ok:false, reason:'没连上广场'};
 }
 async function feedLike(post,on){
-  try{
-    const res=await fetch(location.origin+'/api/like',{method:'POST',
-      headers:{'content-type':'application/json'},
-      body:JSON.stringify({postId:post.id, on, device:deviceId()})});
-    return await res.json();
-  }catch(e){ return {ok:false}; }
+  const r=await apiCall('like', {postId:post.id, on, device:deviceId()});
+  return r || {ok:false};
 }
 async function feedReport(post,reason){
-  try{
-    const res=await fetch(location.origin+'/api/report',{method:'POST',
-      headers:{'content-type':'application/json'},
-      body:JSON.stringify({postId:post.id, reason})});
-    return await res.json();
-  }catch(e){ return {ok:false, reason:'没连上广场'}; }
+  const r=await apiCall('report', {postId:post.id, reason});
+  return r || {ok:false, reason:'没连上广场'};
 }
 
 /* ═════════════════════════ 示例手账 ═════════════════════════
@@ -1518,12 +1649,8 @@ if('serviceWorker' in navigator){
   try{ state.shops=await db.all(); }catch(e){ toast('本地存储不可用：可能是无痕模式'); }
   // 先探一下有没有广场服务。没有（比如静态托管版）就安静降级成单机：
   // 盖章 / 想去 / 我的章全都照常，只是不显示赞和评论，也不报错。
-  try{
-    const ac=new AbortController(); const tm=setTimeout(()=>ac.abort(),2500);
-    const r=await fetch(location.origin+'/api/health',{signal:ac.signal,cache:'no-store'});
-    clearTimeout(tm);
-    state.solo=!r.ok;
-  }catch(e){ state.solo=true; }
+  const health=await apiCall('health');
+  state.solo=!(health && health.ok===true);
   render();
   if(state.user){
     closeGate();
